@@ -7,7 +7,7 @@ This MCP server enables Claude to interact with Webflow's APIs.
 - Node.js (v16 or higher)
 - Claude Desktop App
 - Webflow Account
-- Webflow API Token
+- Webflow API Token (Site token or OAuth Acces Token)
 
 ## Setup Instructions
 
