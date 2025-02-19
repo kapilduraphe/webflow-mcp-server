@@ -1,4 +1,5 @@
 # Webflow MCP Server
+[![smithery badge](https://smithery.ai/badge/@kapilduraphe/webflow-mcp-server)](https://smithery.ai/server/@kapilduraphe/webflow-mcp-server)
 
 This MCP server enables Claude to interact with Webflow's APIs.
 
@@ -71,6 +72,14 @@ Add or update the configuration:
 ```
 
 Save the file and restart Claude Desktop.
+
+### Installing via Smithery
+
+To install Webflow MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@kapilduraphe/webflow-mcp-server):
+
+```bash
+npx -y @smithery/cli install @kapilduraphe/webflow-mcp-server --client claude
+```
 
 ## Available Tools
 
