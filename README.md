@@ -2,6 +2,10 @@
 
 This MCP server enables Claude to interact with Webflow's APIs.
 
+<a href="https://glama.ai/mcp/servers/un9r0vtmku">
+  <img width="380" height="200" src="https://glama.ai/mcp/servers/un9r0vtmku/badge" alt="Webflow Server MCP server" />
+</a>
+
 ## Prerequisites
 
 - Node.js (v16 or higher)
