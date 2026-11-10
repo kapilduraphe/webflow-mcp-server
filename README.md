@@ -1,7 +1,7 @@
 # Webflow MCP Server
 [![smithery badge](https://smithery.ai/badge/@kapilduraphe/webflow-mcp-server)](https://smithery.ai/server/@kapilduraphe/webflow-mcp-server)
 
-This MCP server enables Claude to interact with Webflow's APIs.
+An MCP server that lets Claude read information about your Webflow sites.
 
 <a href="https://glama.ai/mcp/servers/un9r0vtmku">
   <img width="380" height="200" src="https://glama.ai/mcp/servers/un9r0vtmku/badge" alt="Webflow Server MCP server" />
@@ -9,224 +9,164 @@ This MCP server enables Claude to interact with Webflow's APIs.
 
 ## Prerequisites
 
-- Node.js (v22 or higher)
-- Claude Desktop App
-- Webflow Account
-- Webflow API Token (Site token or OAuth Acces Token)
+- [Node.js](https://nodejs.org/) v22 or higher (check with `node --version`)
+- [Git](https://git-scm.com/)
+- [Claude Desktop](https://claude.ai/download)
+- A Webflow account
 
-## Setup Instructions
+## Setup
 
-### 1. Create a Webflow API Token
+### 1. Create a Webflow API token
 
-- Log in to your Webflow account
-- Navigate to Site Settings > Apps & Integrations
-- Generate a new API token with the `sites:read` scope (the only scope this server needs)
-- Copy the token value (you won't be able to see it again)
+1. In Webflow, open your site's **Site settings → Apps & integrations → API access**.
+2. Click **Generate API token**.
+3. Give it the **Sites: Read** scope. This is the only scope the server needs.
+4. Copy the token. Webflow only shows it once.
 
-Alternatively, you can also generate an OAuth Access Token.
+A site token only gives access to that one site. To see several sites, use a token or OAuth access token that covers them.
 
-### 2. Initial Project Setup
-
-Install dependencies and build:
+### 2. Clone and build
 
 ```bash
+git clone https://github.com/kapilduraphe/webflow-mcp-server.git
+cd webflow-mcp-server
 npm ci
 ```
 
 `npm ci` installs the exact dependency versions from `package-lock.json` and builds the server into `dist/`.
 
-### 3. Configure Environment Variables
+Note two paths for the next step:
 
-For running the server outside Claude Desktop (for example, local testing), create a `.env` file in the project root. It is gitignored, so it won't be committed:
+```bash
+pwd          # the repo folder; the server is at <this path>/dist/index.js
+which node   # the Node.js binary (on Windows: where node)
+```
+
+### 3. Add the server to Claude Desktop
+
+Open the Claude Desktop config file. In Claude Desktop, go to **Settings → Developer → Edit Config**. The file is at:
+
+- macOS: `~/Library/Application Support/Claude/claude_desktop_config.json`
+- Windows: `%APPDATA%\Claude\claude_desktop_config.json`
+
+Add the `webflow` entry under `mcpServers`, using the paths from step 2 and your token:
+
+```json
+{
+  "mcpServers": {
+    "webflow": {
+      "command": "/full/path/to/node",
+      "args": ["/full/path/to/webflow-mcp-server/dist/index.js"],
+      "env": {
+        "WEBFLOW_API_TOKEN": "your-api-token"
+      }
+    }
+  }
+}
+```
+
+- Use the full path to `node` rather than just `"node"`. Claude Desktop may otherwise pick up an older Node.js version, especially if you use nvm.
+- On Windows, double the backslashes in JSON paths, for example `"C:\\Users\\you\\webflow-mcp-server\\dist\\index.js"`.
+- If the file already has other servers, add `webflow` alongside them inside `mcpServers`.
+
+### 4. Restart and check it works
+
+Fully quit Claude Desktop and reopen it. Then ask Claude:
+
+> List my Webflow sites.
+
+Claude should call the `get_sites` tool and show your sites. If it doesn't, see [Troubleshooting](#troubleshooting).
+
+## Available tools
+
+### get_sites
+
+Lists all Webflow sites the token can access. For each site, it returns:
+
+- Display name
+- Site ID and workspace ID
+- Created and last published dates
+- Preview URL
+
+### get_site
+
+Gets one site by ID. Takes a `siteId` (from `get_sites`) and returns the same fields plus the site's short name.
+
+## Running without Claude Desktop
+
+For local testing, you can run the server directly. Create a `.env` file in the repo folder. It is gitignored, so it won't be committed:
 
 ```plaintext
 WEBFLOW_API_TOKEN=your-api-token
 ```
 
-Then start the server with:
+Then run:
 
 ```bash
 npm start
 ```
 
-Claude Desktop does not read `.env`; it gets the token from its own config (next step).
+The server talks over standard input/output (stdio), so after the startup messages it waits silently for an MCP client. That is expected; press `Ctrl+C` to stop it. Claude Desktop does not read `.env`, it uses the token from its own config.
 
-### 4. Configure Claude Desktop
-
-Open your Claude Desktop configuration file:
-
-For MacOS:
+## Updating
 
 ```bash
-code ~/Library/Application\ Support/Claude/claude_desktop_config.json
+git pull
+npm ci
 ```
 
-For Windows:
-
-```bash
-code %AppData%\Claude\claude_desktop_config.json
-```
-
-Add or update the configuration:
-
-```json
-{
-    "mcpServers": {
-        "webflow": {
-            "command": "node",
-            "args": [
-                "/ABSOLUTE/PATH/TO/webflow-mcp-server/dist/index.js"
-            ],
-            "env": {
-                "WEBFLOW_API_TOKEN": "your-api-token"
-            }
-        }
-    }
-}
-```
-
-Save the file and restart Claude Desktop.
-
-### Installing via Smithery
-
-To install Webflow MCP Server for Claude Desktop automatically via [Smithery](https://smithery.ai/server/@kapilduraphe/webflow-mcp-server):
-
-```bash
-npx -y @smithery/cli install @kapilduraphe/webflow-mcp-server --client claude
-```
-
-## Available Tools
-
-The server currently provides the following tools:
-
-### get_sites
-
-Retrieves a list of all Webflow sites accessible to the authenticated user. Returns detailed information including:
-
-- Site Display Name and Short Name
-- Site ID and Workspace ID
-- Creation, Last Updated, and Last Published Dates
-- Preview URL
-- Time Zone settings
-- Custom Domains configuration
-- Localization settings (primary and secondary locales)
-- Data collection preferences
-
-### get_site
-
-Retrieves detailed information about a specific Webflow site by ID. Requires a siteId parameter and returns the same detailed information as get_sites for a single site.
-
-## Type Definitions
-
-```typescript
-interface WebflowApiError {
-    status?: number;
-    message: string;
-    code?: string;
-}
-
-interface WebflowCustomDomain {
-    id: string;
-    url: string;
-    lastPublished: string;
-}
-
-interface WebflowLocale {
-    id: string;
-    cmsLocaleId: string;
-    enabled: boolean;
-    displayName: string;
-    redirect: boolean;
-    subdirectory: string;
-    tag: string;
-}
-
-interface WebflowSite {
-    id: string;
-    workspaceId: string;
-    createdOn: string;
-    displayName: string;
-    shortName: string;
-    lastPublished: string;
-    lastUpdated: string;
-    previewUrl: string;
-    timeZone: string;
-    parentFolderId?: string;
-    customDomains: WebflowCustomDomain[];
-    locales: {
-        primary: WebflowLocale;
-        secondary: WebflowLocale[];
-    };
-    dataCollectionEnabled: boolean;
-    dataCollectionType: string;
-}
-```
-
-## Error Handling
-
-The server handles various error scenarios:
-
-### Environment Errors
-
-- Missing WEBFLOW_API_TOKEN
-- Invalid API token
+Then restart Claude Desktop.
 
 ## Troubleshooting
 
-### Common Issues
+### Webflow tools don't appear in Claude
 
-#### Tools not appearing in Claude
+- Fully quit and reopen Claude Desktop after editing the config.
+- Check that both paths in the config are absolute and that `dist/index.js` exists. If it doesn't, run `npm ci` again.
+- Check that the config file is valid JSON (no trailing commas).
+- Check the logs (below).
 
-- Check Claude Desktop logs
-- Verify WEBFLOW_API_TOKEN is set correctly
-- Ensure the path to index.js is absolute and correct
+### "WEBFLOW_API_TOKEN is not defined"
 
-#### Authentication Errors
+The token isn't set. In Claude Desktop, check the `env` block in the config. When using `npm start`, check the `.env` file.
 
-- Verify your API token is valid
-- Check if the token has the necessary permissions
-- Ensure the token hasn't expired
+### Authentication or "Failed to fetch" errors
 
-### Viewing Logs
+- Check that the token is correct and hasn't been revoked.
+- Check that the token has the **Sites: Read** scope.
 
-To view server logs:
+### Errors mentioning syntax or unsupported features
 
-For MacOS/Linux:
+Claude Desktop is probably running an old Node.js version. Set `"command"` to the full path from `which node`, and make sure `node --version` is v22 or higher.
+
+### Viewing logs
+
+macOS:
 
 ```bash
 tail -n 20 -f ~/Library/Logs/Claude/mcp*.log
 ```
 
-For Windows:
+Windows (PowerShell):
 
 ```powershell
-Get-Content -Path "$env:AppData\Claude\Logs\mcp*.log" -Wait -Tail 20
+Get-Content -Path "$env:APPDATA\Claude\logs\mcp*.log" -Wait -Tail 20
 ```
 
-### Environment Variables
+## Other install option: Smithery
 
-If you're getting environment variable errors, verify:
+You can also install through [Smithery](https://smithery.ai/server/@kapilduraphe/webflow-mcp-server):
 
-- `WEBFLOW_API_TOKEN`: Should be a valid API token
+```bash
+npx -y @smithery/cli install @kapilduraphe/webflow-mcp-server --client claude
+```
 
-## Security Considerations
+## Security
 
-- Keep your API token secure
-- Don't commit credentials to version control
-- Use environment variables for sensitive data
-- Regularly rotate API tokens
-- Monitor API usage in Webflow
-- Use minimum required permissions for API token
-
-## Support
-
-If you encounter any issues:
-
-- Check the troubleshooting section above
-- Review Claude Desktop logs
-- Examine the server's error output
-- Check Webflow's API documentation
+- Keep your API token secret. Don't commit it or paste it into chats or issues.
+- Give the token only the **Sites: Read** scope.
+- Rotate the token regularly, and revoke it in Webflow if it may have leaked.
 
 ## License
 
-MIT License - See LICENSE file for details.
+MIT. See [LICENSE](LICENSE).
