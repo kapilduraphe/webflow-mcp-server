@@ -9,7 +9,7 @@ This MCP server enables Claude to interact with Webflow's APIs.
 
 ## Prerequisites
 
-- Node.js (v16 or higher)
+- Node.js (v22 or higher)
 - Claude Desktop App
 - Webflow Account
 - Webflow API Token (Site token or OAuth Acces Token)
@@ -20,26 +20,36 @@ This MCP server enables Claude to interact with Webflow's APIs.
 
 - Log in to your Webflow account
 - Navigate to Site Settings > Apps & Integrations
-- Generate a new API token
+- Generate a new API token with the `sites:read` scope (the only scope this server needs)
 - Copy the token value (you won't be able to see it again)
 
 Alternatively, you can also generate an OAuth Access Token.
 
 ### 2. Initial Project Setup
 
-Install dependencies:
+Install dependencies and build:
 
 ```bash
-npm install
+npm ci
 ```
+
+`npm ci` installs the exact dependency versions from `package-lock.json` and builds the server into `dist/`.
 
 ### 3. Configure Environment Variables
 
-Create a `.env` file for local development (don't commit this file):
+For running the server outside Claude Desktop (for example, local testing), create a `.env` file in the project root. It is gitignored, so it won't be committed:
 
 ```plaintext
 WEBFLOW_API_TOKEN=your-api-token
 ```
+
+Then start the server with:
+
+```bash
+npm start
+```
+
+Claude Desktop does not read `.env`; it gets the token from its own config (next step).
 
 ### 4. Configure Claude Desktop
 
@@ -65,7 +75,7 @@ Add or update the configuration:
         "webflow": {
             "command": "node",
             "args": [
-                "/ABSOLUTE/PATH/TO/YOUR/build/index.js"
+                "/ABSOLUTE/PATH/TO/webflow-mcp-server/dist/index.js"
             ],
             "env": {
                 "WEBFLOW_API_TOKEN": "your-api-token"
